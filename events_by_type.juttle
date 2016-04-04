@@ -1,0 +1,5 @@
+input filter: text -default "not(proc.name = sysdig)" -label 'Sysdig Filter Expression';
+
+read sysdig -raw filter 
+  | reduce -every :2s: count=count() by 'evt-type'
+  | view timechart -markerSize 2 -yScales.primary.label 'Number of Events';
