@@ -1,0 +1,36 @@
+{
+  "name": "juttle-sysdig-adapter",
+  "version": "0.0.1",
+  "description": "Juttle adapter for sysdig",
+  "keywords": [
+    "juttle",
+    "adapter"
+  ],
+  "homepage": "https://github.com/juttle/juttle-sysdig-adapter",
+  "bugs": "https://github.com/juttle/juttle-sysdig-adapter/issues",
+  "license": "Apache-2.0",
+  "main": "lib/index.js",
+  "repository": "juttle/juttle-sysdig-adapter",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "dependencies": {
+      "double-ended-queue": "^2.1.0-0",
+      "underscore": "^1.8.3",
+      "byline": "^4.2.1"
+  },
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "gulp": "^3.9.1",
+    "gulp-eslint": "^1.1.1",
+    "gulp-istanbul": "^0.10.3",
+    "gulp-mocha": "^2.2.0",
+    "istanbul": "^0.4.2",
+    "mocha": "^2.3.4"
+  },
+  "juttleAdapterAPI": "^0.7.0",
+  "engines": {
+    "node": ">=4.2.0",
+    "npm": ">=2.14.7"
+  }
+}

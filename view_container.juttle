@@ -1,0 +1,44 @@
+input container: text -default "examples_cadvisor_1" -label 'Container Name';
+
+function trim_string(str) {
+    if (String.length(str) <= 60) {
+	return str;
+    } else {
+	return String.slice(str, 0, 30) + '...' + String.slice(str, -30);
+    }
+}
+
+// Top files accessed, refreshed every 10 seconds
+read sysdig -raw "container.name=${container} and fd.type=file and evt.is_io=true" -fmt "%evt.time %evt.rawres %fd.name"
+    | batch -every :10s:
+    | reduce bytes=sum('evt-rawres') by 'fd-name'
+    | sort bytes -desc
+    | head 10
+    | put filename=trim_string(*'fd-name')
+    | keep bytes, filename
+    | view table -update 'replace' -title "Top Files Accessed";
+
+
+// Processes within container
+read sysdig -raw "container.name=${container}" -fmt "%evt.time %proc.cmdline %proc.pid %proc.vmrss"
+    | batch -every :10s:
+    | reduce cmd=last('proc-cmdline'), pid=last('proc-pid'), vmrss=last('proc-vmrss') by 'proc-pid'
+    | keep cmd, pid, vmrss
+    | view table -update 'replace' -title "Processes Running In Container" -columnOrder ['pid', 'cmd', 'vmrss'];
+
+// Active Network Connectons
+read sysdig -raw '((fd.type=ipv4 or fd.type=ipv6) and evt.is_io=true) and container.name=${container}' -fmt '%evt.time %fd.cip %fd.cport %fd.sip %fd.sport %fd.l4proto'
+    | batch -every :10s:
+    | reduce client="${*'fd-cip'}:${*'fd-cport'}", server="${*'fd-sip'}:${*'fd-sport'}", proto=last('fd-l4proto') by 'fd-cip', 'fd-cport', 'fd-sip', 'fd-sport'
+    | keep client, server, proto
+    | view table -update 'replace' -title "Active Network Connections" -columnOrder ['client', 'server', 'proto'];
+
+// File I/O
+read sysdig -raw 'fd.type=file and evt.is_io=true and container.name=${container}' -fmt '%evt.time %evt.rawres %evt.type'
+    | reduce -every :2s: bytes=sum('evt-rawres') by 'evt-type'
+    | view timechart -title "File I/O" -markerSize 2;
+
+// Network I/O
+read sysdig -raw '((fd.type=ipv4 or fd.type=ipv6) and evt.is_io=true) and container.name=${container}' -fmt '%evt.time %evt.rawres %evt.type'
+    | reduce -every :2s: bytes=sum('evt-rawres') by 'evt-type'
+    | view timechart -title "Network I/O" -markerSize 2;

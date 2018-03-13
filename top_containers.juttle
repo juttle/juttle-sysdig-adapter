@@ -1,0 +1,35 @@
+// Top containers by Network Activity
+read sysdig -raw '((fd.type=ipv4 or fd.type=ipv6) and evt.is_io=true) and container.name!=host' -fmt '%evt.time %evt.rawres %container.name'
+    | (
+	reduce -every :2s: bytes=sum('evt-rawres')/2.0 by 'container-name'
+	    | view timechart -title "Top Containers by Network Activity" -markerSize 2 -row 1 -col 1 -yScales.primary.label 'Bytes/Sec';
+	reduce -every :10s: bytes=sum('evt-rawres')/10.0 by 'container-name'
+	    | view piechart -row 1 -col 2
+    );
+
+// Top containers by I/O activity
+read sysdig -raw 'fd.type=file and evt.is_io=true and container.name!=host' -fmt '%evt.time %evt.rawres %container.name'
+    | (
+	reduce -every :2s: bytes=sum('evt-rawres')/2.0 by 'container-name'
+	    | view timechart -title "Top Containers by File I/O" -markerSize 2 -row 2 -col 1 -yScales.primary.label 'Bytes/Sec';
+	reduce -every :10s: bytes=sum('evt-rawres')/10.0 by 'container-name'
+	    | view piechart -row 2 -col 2;
+    );
+
+// Top containers by number of file descriptors in use
+read sysdig -raw 'container.name!=host' -fmt '%evt.time %fd.num %container.name'
+    | (
+	reduce -every :2s: -over :30s: num_fds=count_unique('fd-num') by 'container-name'
+	    | view timechart -title "Top Containers by # FDs" -markerSize 2 -row 3 -col 1 -yScales.primary.label '# FDs';
+	reduce -every :2s: -over :30s: num_fds=count_unique('fd-num') by 'container-name'
+	    | view piechart -row 3 -col 2;
+    );
+
+// Top containers by number of errors
+read sysdig -raw 'container.name!=host and evt.failed=true and evt.type!=futex' -fmt '%evt.time %evt.count %container.name'
+    | (
+	reduce -every :2s: num_errs=count() by 'container-name'
+	    | view timechart -title "Top Containers by Num Errors" -markerSize 2 -row 4 -col 1 -yScales.primary.label '# Errors';
+	reduce -every :10s: num_errs=count() by 'container-name'
+	    | view piechart -row 4 -col 2;
+    );
